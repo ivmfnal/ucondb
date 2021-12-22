@@ -1,0 +1,90 @@
+<html>
+<head>
+
+<style type="text/css">
+    body, td, th {
+        font-family:    sans-serif, verdana;
+        font-size:  14px;
+        }
+
+    body {    
+        padding: 20px;
+    }
+    
+    table.data {
+        border-collapse: collapse;
+        }
+
+    table.form {
+        }
+        
+    .form td, .form th {
+        border: 0;
+    }
+    
+    .form th {
+        color: gray;
+        font-weight: bold;
+        text-align: right;
+        vertical-align: top;
+        padding: 4px 6px;
+        }
+        
+    .form td {
+        text-align: left;
+        }
+
+    .data td, .data th {
+        border: 1px solid #BBB;
+        padding: 4px 6px;
+    }
+        
+    .data th {
+        text-align: center;
+        color: #666;
+        }
+    .data td {
+        text-align: right
+        }
+        
+    .partial_shadow td {
+        color: #888;
+    }
+    .complete_shadow td {
+        background-color: #DDD;
+        color: #888;
+    }
+    
+    pre.version_data {
+        background-color: #F8F8F8;
+        font-size: 12px;
+        padding: 4px 6px;
+    }
+    
+    #product_version {
+        position: fixed;
+        bottom: 5px;
+        right: 5px;
+        color: black;
+        font-size: 12px;
+        opacity: 0.8;
+    }
+</style>
+
+{% block head %}{% endblock %}
+
+</head>
+
+<body>
+
+{% if GLOBAL_Title is defined and GLOBAL_Title %}
+<h1>{{GLOBAL_Title}}</h1>
+{% endif %}
+
+{% block body %}{% endblock %}
+
+<div id="product_version">UConDB version: {{GLOBAL_Version}}</div>
+
+</body>
+</html>
+    

@@ -1,0 +1,48 @@
+{% extends 'template.html' %}
+
+{% block body %}
+
+<h2>Objetcs in folder {{folder.Name}}</h2>
+
+<form action="" action="GET">
+    <input type="hidden" name="folder" value="{{folder.Name}}"/>
+    <p>
+        Object name begins with:&nbsp;<input type="text" name="begins_with" 
+            value="{{begins_with}}"/>&nbsp;<input type="submit" value="Search"/>
+    </p>
+</form>
+
+<p>
+{% if not (page is none) %}
+    {% if not (prev_page_url is none) %}
+        <a href="{{prev_page_url}}">&lt;prev</a>&nbsp;|&nbsp;
+    {% endif -%}
+    page {{page + 1}}
+    {%- if not (next_page_url is none) %}
+        &nbsp;|&nbsp;<a href="{{next_page_url}}">next&gt;</a>
+    {% endif %}
+{% endif %}
+</p>    
+
+<table class="data">
+    <tr>
+        <th>Name</th>
+        <th>Version count</th>
+        <th>Last version created</th>
+        <th>Valid from</th>
+        <th>Size</th>
+    </tr>
+    {% for o in objects %}
+        {% if o is not none and o.LastVersion is not none %}
+            <tr>
+                <td><a href="./object?name={{o.Name}}&folder={{folder.Name}}">{{o.Name}}</a></td>
+                <td>{{o.versionCount()}}</td>
+                <td>{{o.LastVersion.Tr|as_datetime}}</td>
+                <td>{{o.LastVersion.Tv}}{% if o.LastVersion.Tv > 600000000 %} ({{o.LastVersion.Tv|as_datetime}}){% endif %}</td>
+                <td>{{o.LastVersion.DataSize}}</td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+</table>
+
+{% endblock %}

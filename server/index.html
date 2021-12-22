@@ -1,0 +1,33 @@
+{% extends 'template.html' %}
+
+{% block body %}
+
+<h2>Folders in namespace {{namespace}}</h2>
+
+<form action="" method="GET">
+Select namespace:&nbsp;<select name="namespace">
+    {% for ns in namespaces %}
+        <option value="{{ns}}"
+            {{ 'selected=selected' if ns == namespace }}>{{ns}}</option>
+    {% endfor %}
+    </select>&nbsp;<input type="submit" value="Go"/>
+</form>
+
+<table class="data">
+    <tr>
+        <th>Name</th>
+        <th>Objects</th>
+        <th>Versions</th>
+        <th>Tags</th>
+    </tr>
+    {% for f in folders %}
+        <tr>
+            <td><a href="./folder?folder={{f.Name}}">{{f.Name}}</a></td>
+            <td>{{f.objectCount()}}</td>
+            <td>{{f.versionCount()}}</td>
+            <td>{{f.tags}}</td>
+        </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

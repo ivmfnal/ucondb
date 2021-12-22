@@ -1,0 +1,21 @@
+#
+# @(#) $Id: ucondb.table,v 1.2 2015/11/25 16:29:49 ivm Exp $
+#
+
+FILE=TABLE
+PRODUCT=ucondb
+
+Group:
+  Flavor=ANY
+  Qualifiers=""
+ 
+
+  Action=Setup
+    setupEnv()
+    proddir()
+    envPrepend(PYTHONPATH,"${UPS_PROD_DIR}/lib")
+  Action=Unsetup
+    unsetupEnv()
+    unprodDir()
+    envRemove(PYTHONPATH, "${UPS_PROD_DIR}/lib")
+END:

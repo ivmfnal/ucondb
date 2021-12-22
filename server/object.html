@@ -1,0 +1,79 @@
+{% extends 'template.html' %}
+
+{% block body %}
+
+<h2>Object {{object.Name}} in folder {{folder.Name}}</h2>
+
+<p>
+    <a href="./index">&lt;folders</a>&nbsp;&nbsp;&nbsp;<a href="./folder?folder={{folder.Name}}">&lt;{{folder.Name}}</a>
+</p>
+
+<p>
+{% if not (page is none) %}
+    {% if not (prev_page_url is none) %}
+        <a href="{{prev_page_url}}">&lt;prev</a>&nbsp;|&nbsp;
+    {% endif -%}
+    page {{page + 1}}
+    {%- if not (next_page_url is none) %}
+        &nbsp;|&nbsp;<a href="{{next_page_url}}">next&gt;</a>
+    {% endif %}
+{% endif %}
+</p>    
+
+<form action="" method="GET">
+    <input type="hidden" name="folder" value="{{folder.Name}}"/>
+    <input type="hidden" name="name" value="{{object.Name}}"/>
+    <table class="form">
+        <tr>
+            <th>Key</th>
+            <td><input type="text" name="key"/></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>or</td>
+        </tr>
+        <tr>
+            <th>Validity time</th>
+            <td><input type="text" name="tv" {% if tv %}value="{{tv or ''}}"{% endif %}/></td>
+            <td>(yyyy-mm-dd[ hh:mm:ss] or numeric)</td>
+        </tr>
+        <tr>
+            <th>Created before</th>
+            <td><input type="text" name="tr" {% if tv %}value="{{tr or ''}}"{% endif %}/></td>
+            <td>(yyyy-mm-dd[ hh:mm:ss])</td>
+        </tr>
+        <tr>
+            <th>Tag</th>
+            <td><input type="text" name="tag" {% if tag %}value="{{tag}}"{% endif %}/></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><input type="submit" value="Search"></td>
+        </tr>
+    </table>
+</form>
+
+<table class="data">
+    <tr>
+        <th>ID</th>
+        <th>Key</th>
+        <th>Created</th>
+        <th>Valid from</th>
+        <th>Size</th>
+        <th>Data key</th>
+        <th>Adler32</th>
+    </tr>
+    {% for v in versions %}
+        <tr>
+            <td><a href="./version?vid={{v.ID}}&folder={{folder.Name}}">{{v.ID}}</a></td>
+            <td>{{v.Key or ""}}</td>
+            <td>{{v.Tr|as_datetime}}</td>
+            <td>{{v.Tv}}{% if v.Tv > 600000000 %} ({{v.Tv|as_datetime}}){% endif %}</td>
+            <td>{{v.DataSize}}</td>
+            <td>{{v.DataKey}}</td>
+            <td>{{"%08x" % (v.Adler32,)}}</td>
+        </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

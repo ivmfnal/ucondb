@@ -1,0 +1,35 @@
+{% extends 'template.html' %}
+
+{% block body %}
+
+<p>
+    <a href="./index">&lt;folders</a>&nbsp;&nbsp;&nbsp;<a href="./folder?folder={{folder.Name}}">&lt;{{folder.Name}}</a>
+</p>
+
+
+<table class="form">
+    <tr>
+        <th>Folder</th><td><a href="./folder?folder={{folder.Name}}">{{folder.Name}}</a></td>
+    </tr>
+    <tr>
+        <th>Object</th><td><a href="./object?folder={{folder.Name}}&name={{version.Object.Name}}">{{version.Object.Name}}</a></td>
+    </tr>
+    <tr>    <th>Version ID</th>         <td>{{version.ID}}</td>             </tr>
+    <tr>    <th>Key</th>         <td>{{version.Key or ""}}</td>             </tr>
+    <tr>    <th>Created</th>         <td>{{version.Tr|as_datetime}}</td>             </tr>
+    <tr>    <th>Valid from </th>         <td>{{version.Tv}} {% if version.Tv > 600000000 %}({{version.Tv|as_datetime}}){% endif %}</td>             </tr>
+    <tr>    <th>Data key</th>         <td>{{version.DataKey}}</td>             </tr>
+    <tr>    <th>Data size</th>         <td>{{version.DataSize}}</td>             </tr>
+    <tr>    <th>Adler32 checksum</th>         <td>{{"%08x" % (version.Adler32,)}}</td>             </tr>
+    <tr>    <th>Data</th>
+            <td>
+                <pre class="version_data">{{data}}</pre>
+                {% if removed > 0 %}
+                    <span style="color:#888">[... {{removed}} bytes removed ...]</span><br/>
+                    <pre class="version_data">{{tail}}</pre>
+                {% endif %}
+            </td>
+    </tr>
+</table>
+
+{% endblock %}
