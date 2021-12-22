@@ -13,9 +13,9 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
-print(sys.path)
-import ucondb.webapi
-print(ucondb.webapi.__file__)
+#print(sys.path)
+#import ucondb.webapi
+#print(ucondb.webapi.__file__)
 
 
 # -- Project information -----------------------------------------------------
