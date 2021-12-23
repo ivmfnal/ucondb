@@ -325,7 +325,7 @@ class UConDBClient(object):
         :param key: str - version key
         :returns: new version metadata as dict
         
-        This method requires that the client was initialzied with username and passowrd
+        This method requires that the client was initialzied with username and password
         """
         if self.Username is None or self.Password is None:
             raise RuntimeError("Username and password must be supplied")
