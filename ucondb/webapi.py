@@ -30,6 +30,8 @@ class UConDBClient(object):
 
         :param server_url: str - the server endpoint URL, default: value of the UCONDB_SERVER_URL environment variable 
         :param timeout: float - timeout to use communicating with the server, default = 5 seconds
+        :param username: str - username, required only for "put"
+        :param password: str - password, required only for "put"
         """
 
         self.URL = server_url
@@ -322,6 +324,8 @@ class UConDBClient(object):
         :param tags: string or list ofstrings - tag or tags to associate with the new version
         :param key: str - version key
         :returns: new version metadata as dict
+        
+        This method requires that the client was initialzied with username and passowrd
         """
         if self.Username is None or self.Password is None:
             raise RuntimeError("Username and password must be supplied")
