@@ -8,7 +8,7 @@ build: $(UCDIR)
 	cd tools; cp $(TOOLS_FILES) $(UCDIR)/tools
 	cd backends; cp $(BACKEND_FILES) $(UCDIR)/backends
 	cp $(API_FILES) $(UCDIR)
-	cd ui; make VERSION=$(VERSION) BINDIR=$(BINDIR) build
+	cp -R ui $(UCDIR)
 	
 $(UCDIR):
 	mkdir -p $@

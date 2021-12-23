@@ -9,6 +9,7 @@ python ucondb.py [-s <server URL>] <command> ...
                                            Env. variable UCONDB_SERVER_URL can be used.
     
 Commands:
+    version                                       -- print server version information
     folders or ls                                 -- list folders
     objects or ls <folder>                        -- list objects in folder
     versions or ls [-t] [-j] <folder> <object>    -- list object versions
@@ -109,6 +110,9 @@ def do_get(client, args):
         else:
             output = sys.stdout.buffer
         output.write(version_info["data"])
+        
+def do_version(client, args):
+    print(client.version().strip())
 
 def main():
     opts, args = getopt.getopt(sys.argv[1:], "s:")
@@ -142,6 +146,8 @@ def main():
         return do_versions(client, args)
     elif command == "get":
         return do_get(client, args)
+    elif command == "version":
+        return do_version(client, args)
     else:
         print("Unknown command:", command, file=sys.stderr)
         print("\n"+Usage, file=sys.stderr)

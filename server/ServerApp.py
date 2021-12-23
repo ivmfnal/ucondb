@@ -131,6 +131,7 @@ class UConDBServerApp(WPApp):
 
     def __init__(self, *params, config_file=None):
         WPApp.__init__(self, *params)
+        self.Version = Version
         self.Config = ConfigFile(path=config_file, envVar = 'UCONDB_CFG')
         self.Title = self.Config.get("Server","title")
         self.DB = DBConnection(self.Config)

@@ -105,6 +105,17 @@ class UConDBClient(object):
                 encoding = w.split("=", 1)[1].strip().lower()
         return content_type, encoding
         
+    def version(self):
+        """
+        Returns server version information
+        
+        :returns: string - version information
+        """
+        url = self.URL + f"/version"
+        response = self.get_request(url)
+        return response.text
+        
+        
     def folders(self):
         """
         Returns list of UConDB folders found in the database

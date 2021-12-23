@@ -94,7 +94,10 @@ class UConDBHandler(WPHandler):
         
     def index(self, req, relpath, **args):
         self.redirect("./UI/index")
-            
+
+    def version(self, req, relpath, **args):
+        return self.App.Version + "\n"
+
     def probe(self, req, relpath, **args):
         try:    
             c = self.App.db().cursor()
