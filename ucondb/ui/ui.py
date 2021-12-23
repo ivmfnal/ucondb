@@ -3,18 +3,23 @@ import sys, getopt, os, json, time, pprint
 from datetime import datetime
 
 Usage = """
-python ucondb.py [-s <server URL>] <command> ...
+ucondb [-s <server URL>] <command> ...
 
     -s <server URL>                     -- URL of the UConDB server. 
                                            Env. variable UCONDB_SERVER_URL can be used.
     
 Commands:
+
     version                                       -- print server version information
+
     folders or ls                                 -- list folders
+
     objects or ls <folder>                        -- list objects in folder
+
     versions or ls [-t] [-j] <folder> <object>    -- list object versions
         -j                      -- JSON output for "versions"
         -t                      -- print Tv as date/time
+
     get <folder> <object> [get options] -- get object version metadata or data
         -m                      -- get metadata, print to stdout
         -k <key>                -- version key
@@ -23,7 +28,36 @@ Commands:
         -T <tag>                -- tag
         -R <numeric>            -- version which existed as of record time, default = now
         -o <output file>        -- output for the version data BLOB, otherwise - stdout
+
+    put -u <username>:<password> [options] (<data file>|-) <folder> <object>
+        -k <key>                -- version key
+        -t <numeric>            -- version validity time, default = 0
+        -T <tag>[,...]          -- tags    
 """
+
+def do_put(client, args):
+    opts, args = getopt.getopt(args, "u:k:t:T:")
+    opts = dict(opts)
+    if not "-u" in opts:
+        print("Username and password must be specified\n")
+        print(Usage)
+        sys.exit(2)
+    if len(args) != 3:
+        print(Usage)
+        sys.exit(2)
+    username, password = opts["-u"].split(":", 1)
+    key = opts.get("-k")
+    tv = int(opts.get("-t", 0))
+    tags = opts.get("-T", "").split(",")
+    tags = [t for t in tags if t]
+    data_file, folder_name, object_name = args
+    if data_file == "-":
+        data = to_bytes(sys.stdin.read())
+    else:
+        data = open(data_file, "rb").read()
+    client.set_authentication(username, password)
+    version_info = client.put(folder_name, object_name, data_file, tv=tv, tags=tags, key=key)
+    pprint.pprint(version_info)
 
 def do_folders(client, args):
     _, args = getopt.getopt(args, "")
@@ -95,7 +129,7 @@ def do_get(client, args):
     meta_only = "-m" in opts
     out = opts.get("-o")
     
-    version_info = client.get_version(folder, object_name, tr=tr, tag=tag, tv=tv, key=key, id=vid, meta_only=meta_only)
+    version_info = client.get(folder, object_name, tr=tr, tag=tag, tv=tv, key=key, id=vid, meta_only=meta_only)
     if version_info is None:
         print("Not found", file=sys.stderr)
         sys.exit(1)
@@ -146,6 +180,8 @@ def main():
         return do_versions(client, args)
     elif command == "get":
         return do_get(client, args)
+    elif command == "put":
+        return do_put(client, args)
     elif command == "version":
         return do_version(client, args)
     else:

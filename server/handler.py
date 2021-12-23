@@ -96,7 +96,7 @@ class UConDBHandler(WPHandler):
         self.redirect("./UI/index")
 
     def version(self, req, relpath, **args):
-        return self.App.Version + "\n"
+        return self.App.Version
 
     def probe(self, req, relpath, **args):
         try:    
@@ -189,11 +189,12 @@ class UConDBHandler(WPHandler):
         key = params.get("key")
         override = params.get("override", "no") == "yes"
         o = folder.createObject(object)
-        if type(tags) == type(""):
+        if isinstance(tags, str):
             tags = [tags]
         #print "Request body:", req.body
         v = o.createVersion(req.body, tv, tags=tags, key=key, override_key=override)
-        return str(v.ID)
+        full_meta = params.get("full_meta", "no") == "yes"
+        return (json.dumps(v.metadata), "text/json") if full_meta else str(v.ID)
 
     def put(self, req, relpath, **args):
         params = self.parseArgs(relpath, args)

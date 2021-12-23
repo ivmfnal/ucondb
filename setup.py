@@ -24,6 +24,7 @@ setup(
     keywords = "database, web service, conditions database, blob storage",
     packages=['ucondb', 'ucondb.tools', 'ucondb.backends', 'ucondb.ui'],
     zip_safe = False,
+    install_requires=["requests"],
     classifiers=[
     ],
     entry_points = {

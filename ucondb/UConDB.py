@@ -603,6 +603,7 @@ class UCDVersion:
         self.Key = key
         self.LookupTv = None        # if the version was found by Tv, this will be populated
         self.__Data = None
+        self.Tags = None
         
     def execute(self, sql, args=()):
         #print "Table.execute(%s, %s)" % (sql, args)
@@ -619,19 +620,21 @@ class UCDVersion:
     Data = property(__get_data, __set_data)
      
     def addTag(self, tag):
-    
         c = self.execute("""
             delete from %t_tags
                 where tag_name = %s and version_id = %s;
             insert into %t_tags(version_id, tag_name)
                 values(%s, %s);
             commit""", (tag, self.ID, self.ID, tag))
+        self.Tags = (self.Tags or []).append(tag)
             
     def getTags(self):
-        c = self.execute("""
-            select tag_name from %t_tags
-                where version_id=%s order by tag_name""", (self.ID,))
-        return [x[0] for x in c.fetchall()]
+        if self.Tags is None:
+            c = self.execute("""
+                select tag_name from %t_tags
+                    where version_id=%s order by tag_name""", (self.ID,))
+            self.Tags = [x[0] for x in c.fetchall()]
+        return self.Tags
         
     @property
     def metadata(self):
@@ -640,7 +643,7 @@ class UCDVersion:
             "folder":   self.Object.Folder.Name,
             "tv":   self.Tv,
             "tr":   epoch(self.Tr),
-            #"tags": self.getTags(),
+            "tags": self.getTags(),
             "adler32":  self.Adler32,
             "uadler32": self.Adler32 & 0xFFFFFFFF,
             "data_size": self.DataSize,

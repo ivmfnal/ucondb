@@ -25,7 +25,7 @@ def timestamp(t):
 
 class UConDBClient(object):
     
-    def __init__(self, server_url, timeout=5):
+    def __init__(self, server_url, timeout=5, username=None, password=None):
         """UConDB client constructor
 
         :param server_url: str - the server endpoint URL, default: value of the UCONDB_SERVER_URL environment variable 
@@ -34,6 +34,8 @@ class UConDBClient(object):
 
         self.URL = server_url
         self.Timeout = 5
+        self.Username = username
+        self.Password = password
         
     def send_request(self, method, url, **args):
         # implements retrying with exponential retry interval until self.Timeout elapses
@@ -56,8 +58,8 @@ class UConDBClient(object):
     def get_request(self, url, **args):
         return self.send_request("get", url, **args)
 
-    def post_request(self, url, **args):
-        return self.send_request("post", url, **args)
+    def post_request(self, url, data, **args):
+        return self.send_request("post", url, data=data, **args)
 
     RS = b"\x1E"     # record separator according to RFC7464
         
@@ -104,6 +106,12 @@ class UConDBClient(object):
             if w.startswith("charset="):
                 encoding = w.split("=", 1)[1].strip().lower()
         return content_type, encoding
+        
+    def set_authentication(self, *params, method="digest"):
+        if method == "digest":
+            self.Username, self.Password = params
+        else:
+            raise ValueError("Unknown authentication method {method}")
         
     def version(self):
         """
@@ -237,7 +245,7 @@ class UConDBClient(object):
         
         params = {"ids":  list(version_ids)} if version_ids is not None else {"keys":  list(keys)}
 
-        response = self.post_request(url, data=json.dumps(params), stream=True)
+        response = self.post_request(url, json.dumps(params), stream=True)
         if response.status_code != 200:
             raise WebClientError(response.status_code, url, response.text)
             
@@ -276,18 +284,18 @@ class UConDBClient(object):
             raise WebClientError(response.status_code, url, response.text)
         return response.content
 
-    def get_version(self, folder_name, object_name, tv=None, tr=None, tag=None, key=None, id=None, meta_only=True):
+    def get(self, folder_name, object_name, tv=None, tr=None, tag=None, key=None, id=None, meta_only=True):
         """
-        Retieves version metadata, possibly with data BLOB
+        Retrieves single version metadata, possibly including the data BLOB
         
         :param folder_name: str - name of the folder
         :param object_name: str - name of the object
         :param tv: float - validity time
         :param tr: float - record time
         :param tag: str - tag
-        :param tag: str - version key
+        :param key: str - version key
         :param id: int - version id
-        :param meta_only: boolean - if True, data BLOB will be also returned
+        :param meta_only: boolean - if False, data BLOB will be also returned
         :returns: dict - version metadata. If ``meta_only`` is False, the dictionary will contain "data" element pointing to the BLOB as bytes
         """
         tvs = [tv] if tv is not None else None
@@ -302,6 +310,42 @@ class UConDBClient(object):
             data = self.get_data(folder_name, data_key=version_info["data_key"])
             version_info["data"] = data
         return version_info
+
+    def put(self, folder_name, object_name, data, tv=None, tags=None, key=None):
+        """
+        Stores new version for the object
+        
+        :param folder_name: str - name of the folder
+        :param object_name: str - name of the object
+        :param data: bytes - data BLOB
+        :param tv: float - validity time, default = 0
+        :param tags: string or list ofstrings - tag or tags to associate with the new version
+        :param key: str - version key
+        :returns: new version metadata as dict
+        """
+        if self.Username is None or self.Password is None:
+            raise RuntimeError("Username and password must be supplied")
+        from requests.auth import HTTPDigestAuth
+        url = f"{self.URL}/data/{folder_name}/{object_name}?full_meta=yes"
+        params = []
+        if tv is not None:
+            params.append(f"tv={tv}")
+        if tags is not None:
+            if isinstance(tags, str):
+                tags = [tags]
+            for tag in tags:
+                params.append(f"tag={tag}")
+        if key is not None:
+            params.append(f"key={key}")
+        if params:
+            url += "&" + "&".join(params)
+        response = self.post_request(url, data, verify=False, auth=HTTPDigestAuth(self.Username, self.Password))
+        if response.status_code != 200:
+            raise WebClientError(response.status_code, url, response.text)
+        return response.json()
+        
+        
+        
 
 if __name__ == "__main__":
     import sys, getopt, pprint
