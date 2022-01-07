@@ -529,7 +529,7 @@ class UConDBHandler(WPHandler):
             stream = (v.as_jsonable() for v in versions)
         return stream_as_json_seq(stream), "text/json-seq"
         
-    def get_blob(self, req, relpath, folder=None, data_key=None, version_id=None, compress="default"):
+    def get_blob(self, req, relpath, folder=None, data_key=None, version_id=None, compress="no"):
         if (data_key is None) == (version_id is None):
             return 400, "One and only one of data_key, version_id must be specified"
         folder_name = folder or relpath
@@ -562,7 +562,7 @@ class UConDBHandler(WPHandler):
             headers["Transfer-Encoding"] = "deflate"
         return blob, headers
 
-    def data_for_versions(self, req, relpath, folder=None, ids=None, filter=None, compress="default"):
+    def data_for_versions(self, req, relpath, folder=None, ids=None, filter=None, compress="no"):
         filter=unquote(filter or "") or None
         if ids:
             ids = [int(x) for x in ids.strip.split(",")]
@@ -656,6 +656,6 @@ class UConDBHandler(WPHandler):
                         yield format_blob(vids, blob)
                         print("data_for_versions: yield done")
 
-            print("data_for_versions: stream done")
+            #print("data_for_versions: stream done")
 
         return stream_data(blobs), "application/octet-stream; charset=utf-8"
