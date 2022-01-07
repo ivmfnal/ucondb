@@ -530,8 +530,7 @@ class UConDBHandler(WPHandler):
         return stream_as_json_seq(stream), "text/json-seq"
         
     def get_blob(self, req, relpath, folder=None, data_key=None, version_id=None, compress="default"):
-        nspecs = sum(int(x) for x in [data_key is not None, version_id is not None])
-        if nspec != 1:
+        if (data_key is None) == (version_id is None):
             return 400, "One and only one of data_key, version_id must be specified"
         folder_name = folder or relpath
         db = self.App.db()
