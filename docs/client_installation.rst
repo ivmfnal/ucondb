@@ -8,6 +8,7 @@ UConDB Client Installation
     $ python setup.py install --user
     
     $ export UCONDB_SERVER_URL=...
+    $ export PATH=${HOME}/.local/bin:$PATH
     $ ucondb version
     3.9.0
 
