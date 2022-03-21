@@ -313,7 +313,7 @@ class UConDBClient(object):
             version_info["data"] = data
         return version_info
 
-    def put(self, folder_name, object_name, data, tv=None, tags=None, key=None):
+    def put(self, folder_name, object_name, data, tv=None, tags=None, key=None, override_key=False):
         """
         Stores new version for the object
         
@@ -323,6 +323,7 @@ class UConDBClient(object):
         :param tv: float - validity time, default = 0
         :param tags: string or list ofstrings - tag or tags to associate with the new version
         :param key: str - version key
+        :param override_key: boolean - if True and key is specified, the key will be moved to the new version
         :returns: new version metadata as dict
         
         This method requires that the client was initialzied with username and password
@@ -341,6 +342,7 @@ class UConDBClient(object):
                 params.append(f"tag={tag}")
         if key is not None:
             params.append(f"key={key}")
+            params.append("override=" + ("yes" if override_key else "no"))
         if params:
             url += "&" + "&".join(params)
         response = self.post_request(url, data, verify=False, auth=HTTPDigestAuth(self.Username, self.Password))
