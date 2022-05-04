@@ -47,7 +47,7 @@ def do_put(client, args):
         sys.exit(2)
     username, password = opts["-u"].split(":", 1)
     key = opts.get("-k")
-    tv = int(opts.get("-t", 0))
+    tv = float(opts.get("-t", 0))
     tags = opts.get("-T", "").split(",")
     tags = [t for t in tags if t]
     data_file, folder_name, object_name = args
