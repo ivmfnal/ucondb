@@ -1,6 +1,6 @@
 from webpie import WPApp, WPHandler, app_synchronized
 from webpie import Response as BaseResponse
-from  configparser import ConfigParser
+import yaml
 from UI import UConDBUIHandler
 from wsdbtools import ConnectionPool
 
@@ -20,20 +20,6 @@ from hashlib import md5
 
 from handler import UConDBHandler
 
-class   ConfigFile(object):
-    def __init__(self, path=None, envVar=None):
-        path = path or os.environ.get(envVar)
-        self.Config = ConfigParser()
-        if path:
-            self.Config.read(path)
-        
-    def get(self, section, param, default=None):
-        try:    return self.Config.get(section, param)
-        except: return default
-
-    def __getattr__(self, attr):
-        return getattr(self.Config, attr)
-        
 class DBConfig(object):
 
     def __init__(self, cfg):
@@ -65,8 +51,60 @@ class DBConfig(object):
         self.DB = None
         self.DataStore = None
         self.TableViewMap = {}
+
+class DBConnection(object):
+    
+    def __init__(self, cfg):
+        meta_cfg = cfg["Metadata"]
+        connstr = "host=%(host)s port=%(port)s user=%(user)s dbname=%(dbname)s" % meta_cfg
+        if meta_cfg.get("password"):
+            connstr += " password=" + meta_cfg.get("password")
+        self.MetaNamespace = meta_cfg.get("namespace")
+        self.MetaConnPool = ConnectionPool(postgres=connstr, idle_timeout=5)
         
-class DBConnection:
+        data_cfg = cfg["Data"]
+        self.DatsStoreType = data_storage_type = data_cfg["type"]
+        if data_storage_type == 'couchbase':
+            self.CouchbaseUsername = cfg.get('object_storage','username')
+            self.CouchbasePassword = cfg.get('object_storage','password')
+            self.CouchbaseBucket = cfg.get('object_storage','bucket')
+            self.CouchbaseURL = cfg.get('object_storage','url')
+            #print "Couchbase connection: %s %s" % (self.CouchbaseConn, self.CouchbasePassword)
+        elif data_storage_type == 'kbs':
+            self.KBSURL = cfg.get('object_storage','url')
+            self.KBSUsername = cfg.get('object_storage','username')
+            self.KBSPassword = cfg.get('object_storage','password')
+        else:
+            # postgres
+            connstr = "host=%(host)s port=%(port)s user=%(user)s dbname=%(dbname)s" % data_cfg
+            if data_cfg.get("password"):
+                connstr += " password=" + data_cfg.get("password")
+            self.DataNamespace = data_cfg.get("namespace")
+            self.DataConnPool = ConnectionPool(postgres=connstr, idle_timeout=5)
+
+    def ucondb(self):
+        meta_db = self.MetaConnPool.connect()
+        if self.DatsStoreType == 'couchbase':
+            if self.DataStore is None:
+                self.DataStore = UCDCouchBaseDataStorage(self.CouchbaseURL,
+                        self.KBSUsername, self.CouchbasePassword, self.CouchbaseBucket)
+            data_store = self.DataStore
+        elif self.DatsStoreType == 'kbs':
+            from UCon_kbs import UCDKBSDataStorage
+            if self.DataStore is None:
+                self.DataStore = UCDKBSDataStorage(self.KBSURL, self.KBSUsername, self.KBSPassword)
+            data_store = self.DataStore            
+        else:
+            #Postgres
+            data_db = self.DataConnPool.connect()
+            data_store = UCDPostgresDataStorage(data_db, default_namespace=self.DataNamespace)
+        return UConDB(meta_db, data_store, default_namespace=self.MetaNamespace)
+
+    def disconnect(self):
+        self.DataConnPool.close()
+        self.MetaConnPool.close()
+
+class DBConnection______:
 
     def __init__(self, cfg):
         self.Host = None
@@ -102,7 +140,6 @@ class DBConnection:
         self.TableViewMap = {}
         
     def ucondb(self):
-        db = self.MetaDBPool.connect()
         if self.DatsStoreType == 'couchbase':
             if self.DataStore is None:
                 self.DataStore = UCDCouchBaseDataStorage(self.CouchbaseURL,
@@ -125,38 +162,35 @@ def as_datetime(x):
     if isinstance(x, (int, float)):
         x = fromepoch(x)
     return x.strftime("%Y-%m-%d %H:%M:%S%z")
-        
-
+    
 class UConDBServerApp(WPApp):
 
     def __init__(self, *params, config_file=None):
         WPApp.__init__(self, *params)
         self.Version = Version
-        self.Config = ConfigFile(path=config_file, envVar = 'UCONDB_CFG')
-        self.Title = self.Config.get("Server","title")
+        self.Config = yaml.load(open(config_file or os.environ["UCONDB_CFG"], "r"), Loader = yaml.SafeLoader)
         self.DB = DBConnection(self.Config)
-        self.DefaultNamespace = self.DB.Namespace
-        self.Authentication = self.Config.get('Server','authentication', "RFC2617")
+        self.ServerConfig = self.Config["Server"]
+        self.Title = self.ServerConfig.get("title")
+        self.Authentication = self.ServerConfig.get('authentication', "RFC2617")
         assert self.Authentication in ("RFC2617", "none"), "Unknown authentication method: %s" % (self.Authentication,)
         
-        self.ServerPassword = None
-        try:    
-            self.ServerPassword = self.Config.get('Server','password')
-        except: pass
+        self.ServerPassword = self.ServerConfig.get("password")
 
         self.Passwords = {}         # {"folder": {"user":"password",...},...}
         
-        if self.Config.has_section("Authorization"):
-            for f, lst in self.Config.items("Authorization"):
-                lst = lst.split()
-                lst = [tuple(x.split(':',1)) for x in lst]
-                folder_dict = {}
-                for u, p in lst:
-                    folder_dict[u] = p
-                self.Passwords[f] = folder_dict
-                
-        self.ReadOnly = self.Config.get("Server", "read_only", False) == "yes"
-    
+        self.Passwords = self.Config.get("Authorization", {})
+        """
+        for f, lst in auth_config.items():
+            lst = lst.split()
+            lst = [tuple(x.split(':',1)) for x in lst]
+            folder_dict = {}
+            for u, p in lst:
+                folder_dict[u] = p
+            self.Passwords[f] = folder_dict
+        """        
+        self.ReadOnly = self.ServerConfig.get("read_only", False)
+
     def init(self):
         tempdirs=[self.ScriptHome]
         templates_dir = os.environ.get("JINJA2_TEMPLATES")
