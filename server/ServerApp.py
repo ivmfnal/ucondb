@@ -59,7 +59,7 @@ class DBConnection(object):
         connstr = "host=%(host)s port=%(port)s user=%(user)s dbname=%(dbname)s" % meta_cfg
         if meta_cfg.get("password"):
             connstr += " password=" + meta_cfg.get("password")
-        self.MetaNamespace = meta_cfg.get("namespace")
+        self.MetaNamespace = meta_cfg.get("namespace") or "public"
         self.MetaConnPool = ConnectionPool(postgres=connstr, idle_timeout=5)
         
         data_cfg = cfg["Data"]
@@ -79,7 +79,7 @@ class DBConnection(object):
             connstr = "host=%(host)s port=%(port)s user=%(user)s dbname=%(dbname)s" % data_cfg
             if data_cfg.get("password"):
                 connstr += " password=" + data_cfg.get("password")
-            self.DataNamespace = data_cfg.get("namespace")
+            self.DataNamespace = data_cfg.get("namespace") or "public"
             self.DataConnPool = ConnectionPool(postgres=connstr, idle_timeout=5)
 
     def ucondb(self):

@@ -1,0 +1,24 @@
+Authorization:
+  '*':
+    ivm: ivm361351
+    ucon_writer: mcr24YUk
+Data:
+  dbname: sbnd_online_prd
+  host: sbnd-db01.fnal.gov
+  namespace: ucon_prd
+  password: mcr24YUk
+  port: 5434
+  type: postgres
+  user: ucon_writer
+Metadata:
+  dbname: sbnd_online_prd
+  host: sbnd-db01.fnal.gov
+  namespace: ucon_prd
+  password: mcr24YUk
+  port: 5434
+  user: ucon_writer
+Server:
+  authentication: RFC2617
+  password: '1234'
+  read_only: false
+  title: SBND Run Configurations Database (online instance)
