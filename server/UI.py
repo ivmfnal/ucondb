@@ -16,7 +16,7 @@ class UConDBUIHandler(WPHandler):
             namespace = namespace, folders = folders)
 
     PAGE = 100
-            
+    
     def paginate(self, nitems, page, url_head):
         if page is None and nitems > self.PAGE:    page = 0
         next_url = prev_url = None
@@ -26,6 +26,7 @@ class UConDBUIHandler(WPHandler):
             next_url = url_head + "&page=%d" % (page + 1,)
         return page, prev_url, next_url
         
+    #@sanitize("sql")
     def folder(self, req, relpath, begins_with=None, folder=None, page=None, **args):
         db = self.App.db()
         folder = db.getFolder(folder)
@@ -46,6 +47,7 @@ class UConDBUIHandler(WPHandler):
             prev_page_url = prev_page_url, next_page_url = next_page_url,
             objects = objects, begins_with=begins_with or "")
 
+    #@sanitize("sql")
     def object(self, request, relpath, folder=None, name=None, page=None,
                     key=None, tv=None, tr=None, tag=None, **args):
         db = self.App.db()
@@ -101,6 +103,7 @@ class UConDBUIHandler(WPHandler):
     HEAD = 32*1024
     TAIL = 1024
 
+    #@sanitize("sql")
     def version(self, request, relpath, folder=None, vid=None, **args):
         db = self.App.db()
         folder = db.getFolder(folder)

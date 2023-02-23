@@ -170,6 +170,7 @@ class UConDBServerApp(WPApp):
         self.Version = Version
         self.Config = yaml.load(open(config_file or os.environ["UCONDB_CFG"], "r"), Loader = yaml.SafeLoader)
         self.DB = DBConnection(self.Config)
+        self.DefaultNamespace = self.DB.MetaNamespace
         self.ServerConfig = self.Config["Server"]
         self.Title = self.ServerConfig.get("title")
         self.Authentication = self.ServerConfig.get('authentication', "RFC2617")

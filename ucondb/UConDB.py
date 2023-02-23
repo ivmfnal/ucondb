@@ -1,4 +1,4 @@
-import psycopg2, sys, time, zlib, hashlib, uuid
+import psycopg2, sys, time, zlib, hashlib, uuid, string
 from datetime import datetime
 from .tools import to_str, to_bytes, DbDig, epoch
 from base64 import b64encode
@@ -63,6 +63,7 @@ class UConDB:
         return f
 
     def getFolder(self, name):
+        UCDFolder.validate_name(name)
         namespace, name, fqname = self.namespace_name(name)
         if not UCDFolder.exists(self.connect(), fqname):
             return None
@@ -79,7 +80,6 @@ class UConDB:
         return sorted(dbd.nspaces())
 
     def listFolders(self, namespace):
-    
         dbd = DbDig(self.connect())
         tables = dbd.tables(namespace)
         ns = "" if namespace == self.DefaultNamespace else namespace + "."
@@ -101,7 +101,7 @@ class UConDB:
             
             folders.append(ns + fn)
         return [UCDFolder(self, fn) for fn in folders]
-                
+
     def execute(self, table, sql, args=()):
         #print ("DB.execute(%s, %s, %s)" % (table, sql, args))
         namespace, table_no_ns, fqname = self.namespace_name(table)
@@ -117,7 +117,8 @@ class UConDB:
     def disconnect(self):
         if self.Conn:   self.Conn.close()
         self.Conn = None
-        
+
+
 class UCDFolder:
 
     CreateTables = """
@@ -160,14 +161,26 @@ create table %t_salt
         drop table %t_salt;
     """
 
+    NameSafe = string.ascii_letters + string.digits + '._'
+
     def __init__(self, db, name):
+        self.validate_name(name)
         self.Name = name
         self.DB = db
         self.DataInterface = self.DB.DataStorage
         
     def __str__(self):
         return "UCDFolder(%s)" % (self.Name,)
-    
+        
+    @staticmethod
+    def validate_name(name):
+        valid = name and \
+            all(x in UCDFolder.NameSafe for x in name) \
+            and sum(x == '.' for x in name) <= 1 \
+            and not (name.startswith('.') or name.endswith('.'))
+        if not valid:
+            raise ValueError("syntax error in forlder name: [%s]" % (name,))
+
     @staticmethod
     def exists(db, fqname):
         dbd = DbDig(db)
@@ -277,22 +290,22 @@ create table %t_salt
         return c.fetchone()[0]
                               
     def listObjects(self, limit=None, offset=None, begins_with=None):
+        assert limit is None or isinstance(limit, int)
+        assert offset is None or isinstance(offset, int)
+        assert begins_with is None or isinstance(begins_with, str)
         page = ""
         if limit != None:
             page = " limit %d " % (limit,)
         if offset != None:
             page += " offset %d " % (offset,)
-        match_clouse = ""
-        if begins_with != None:
-            match_clouse = " and object like '%s%%%%' " % (begins_with,)
-        sql = """
-            select distinct object from %%t_versions
+        sql = f"""select distinct object from %t_versions
                 where not deleted 
-                    %s
+                    and ( %s is null or object like (%s || '%%') )
                 order by object 
-                %s""" % (match_clouse, page)
+                {page}
+                """
         #print sql
-        c = self.execute(sql)
+        c = self.execute(sql, (begins_with, begins_with))
         return [UCDObject(self, name) for (name,) in c.fetchall()]   
         
     def listTags(self):
@@ -386,6 +399,11 @@ class UCDObject:
         return v
         
     def listVersions(self, tr=None, tv=None, tr_since=None, tag=None, limit=None, offset=None):
+        assert tv is None or isinstance(tv, (int, float))
+        assert tr_since is None or isinstance(tr_since, datetime)
+        assert tag is None or isinstance(tag, str)
+        assert limit is None or isinstance(limit, int)
+        assert offset is None or isinstance(offset, int)
         filters = ""
         if tr_since is not None:    filters += " and v.tr > '%s' " % (tr_since,)
         if tv is not None:    filters += " and v.tv <= %s " % (tv,)
@@ -418,6 +436,10 @@ class UCDObject:
         
     def getVersionsForInterval(self, tv0, tv1, tag=None, tr=None):
         # returns list of versions sorted by Tv in ascending order
+        assert isinstance(tv0, (int, float))
+        assert isinstance(tv1, (int, float))
+        assert tr is None or isinstance(tr, datetime)
+        assert tag is None or isinstance(tag, str)
         
         v0 = self.getVersion(tag=tag, tr=tr, tv=tv0) # version immediately before tv0
 
@@ -429,22 +451,22 @@ class UCDObject:
                     where 
                         not deleted 
                         and object=%s 
-                        and tv > {tv0} and tv <= {tv1}
-                        {tr_filter}
+                        and tv > %s and tv <= %s
+                        and (%s is null or v.tr <= %s)
                     order by tr desc, tv desc
                     """
-            c = self.execute(sql, (self.Name,))
+            c = self.execute(sql, (self.Name, tv0, tv1, tr, tr))
         else:
             sql = f"""select v.id, v.key, v.tr, v.tv, v.data_key, v.data_size, v.adler32
                     from %t_versions v, %t_tags t
                     where not v.deleted and v.object=%s 
                         and v.id = t.version_id 
                         and t.tag_name = %s
-                        and tv > {tv0} and tv <= {tv1}
-                        {tr_filter}
+                        and tv > %s and tv <= %s
+                        and (%s is null or v.tr <= %s)
                     order by v.tr desc, v.tv desc
                     """
-            c = self.execute(sql, (self.Name, tag))
+            c = self.execute(sql, (self.Name, tag, tv0, tv1, tr, tr))
             
         last_version = None
         versions = []
@@ -558,15 +580,13 @@ class UCDObject:
                 where v.object = %s and v.key = any(%s)
                 """, (self.Name, keys))
         else:
-            wheres = ""
-            if key_min:
-                wheres += f" and key >= '{key_min}' "
-            if key_max:
-                wheres += f" and key < '{key_max}' "
             c = self.execute(f"""select v.id, v.tr, v.tv, v.data_key, data_size, v.key, v.adler32
                 from %t_versions v
-                where v.object = '{self.Name}' {wheres}
-                """)
+                where v.object = %s
+                    and ( %s is null or key >= %s )
+                    and ( %s is null or key < %s )
+                """, 
+                (self.Name, key_min, key_min, key_max, key_max))
                 
         t1 = time.time()
 

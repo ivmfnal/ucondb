@@ -131,6 +131,8 @@ class UConDBHandler(WPHandler):
         d = {}
         if relpath:
             for w in relpath.split('/'):
+                if "'" in w:
+                    raise ValueError("Invalid path element")
                 kv = tuple(w.split('=',1))
                 if len(kv) > 1:
                     k, v = kv
@@ -196,6 +198,7 @@ class UConDBHandler(WPHandler):
         full_meta = params.get("full_meta", "no") == "yes"
         return (json.dumps(v.metadata), "text/json") if full_meta else str(v.ID)
 
+    #@sanitize("safe")
     def put(self, req, relpath, **args):
         params = self.parseArgs(relpath, args)
         return self.doPut(req, params)    
@@ -265,6 +268,7 @@ class UConDBHandler(WPHandler):
                 ret = self.chunked(v.Data), headers
             return ret
             
+    #@sanitize("safe")
     def tag(self, req, relpath, tag=None, folder=None, key=None, object=None, version_id=None):
         if self.App.ReadOnly:
             return "Read-only instance", 405
@@ -282,11 +286,13 @@ class UConDBHandler(WPHandler):
         v.addTag(tag)
         return "OK"
             
+    #@sanitize("safe")
     def get(self, req, relpath, **args):  
         #print "relpath=", relpath
         params = self.parseArgs(relpath, args)
         return self.doGet(req, params)        
         
+    #@sanitize("safe")
     def data(self, req, relpath, **args):
         params = self.parseArgs(relpath, args)
         if req.method.lower() in ("put", "post"):
@@ -306,6 +312,7 @@ class UConDBHandler(WPHandler):
             ret = Response(v.Data)
         return ret
         
+    #@sanitize("safe")
     def objects(self, req, relpath, folder=None, format="json", **args):
             folder = self.App.db().getFolder(folder)
             objects = folder.listObjects()
@@ -316,6 +323,7 @@ class UConDBHandler(WPHandler):
                 out = "Name\n" + "\n".join([o.Name for o in objects])
             return out, "text/"+format      
         
+    #@sanitize("safe")
     def tags(self, req, relpath, folder=None, format="json", **args):
             folder = self.App.db().getFolder(folder)
             tags = folder.listTags()
@@ -326,6 +334,7 @@ class UConDBHandler(WPHandler):
                 out = "Name\n" + "\n".join(tags)
             return out, "text/"+format   
 
+    #@sanitize("safe")
     def create_folder(self, req, relpath, folder=None, owner=None, 
                             read=None, write=None, drop="no", **args):
         if self.App.ReadOnly:
@@ -343,6 +352,7 @@ class UConDBHandler(WPHandler):
                 drop_existing=drop)
         return Response('OK')
                
+    #@sanitize("safe")
     def folders(self, req, relpath, format="json", namespace=None, **args):
         db = self.App.db()
         namespace = namespace or db.DefaultNamespace
@@ -355,6 +365,7 @@ class UConDBHandler(WPHandler):
         return Response(out, content_type="text/"+format)
         
         
+    #@sanitize("safe")
     def versions(self, req, relpath, folder=None, object=None, format="json", namespace="public", tv=None, tr=None, tr_since=None, **args):
         if tv is None:  
             tv = time.time()
@@ -484,6 +495,7 @@ class UConDBHandler(WPHandler):
             out = o.getVersionsByTvs(tvs, tag=tag, tr=tr)       # returns versions in the same order as tvs
         return out
 
+    #@sanitize("safe")
     def lookup_versions(self, req, relpath, mode="meta", object=None, folder=None, tr=None, tag=None, **args):
         #
         # relpath can be either blank, or "folder" or "folder/object"
@@ -529,6 +541,7 @@ class UConDBHandler(WPHandler):
             stream = (v.as_jsonable() for v in versions)
         return stream_as_json_seq(stream), "text/json-seq"
         
+    #@sanitize("safe")
     def get_blob(self, req, relpath, folder=None, data_key=None, version_id=None, compress="no"):
         if (data_key is None) == (version_id is None):
             return 400, "One and only one of data_key, version_id must be specified"
@@ -562,6 +575,7 @@ class UConDBHandler(WPHandler):
             headers["Transfer-Encoding"] = "deflate"
         return blob, headers
 
+    #@sanitize("safe")
     def data_for_versions(self, req, relpath, folder=None, ids=None, filter=None, compress="no"):
         filter=unquote(filter or "") or None
         if ids:
