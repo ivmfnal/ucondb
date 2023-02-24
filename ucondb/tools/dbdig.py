@@ -87,9 +87,9 @@ class DbDigPostgres(DbDigImpl):
         Find all tables
         """
         c = self.Conn.cursor()
-        sql = """select relname from pg_class where relnamespace=(select OID from pg_namespace where nspname='%s') and relkind='r'""" % (nspace,)
+        sql = """select relname from pg_class where relnamespace=(select OID from pg_namespace where nspname=%s) and relkind='r'"""
 
-        c.execute(sql)
+        c.execute(sql, (nspace,))
         dd = c.fetchall()
         c.close()
         if dd:

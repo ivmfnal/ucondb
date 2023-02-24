@@ -179,7 +179,7 @@ create table %t_salt
             and sum(x == '.' for x in name) <= 1 \
             and not (name.startswith('.') or name.endswith('.'))
         if not valid:
-            raise ValueError("syntax error in forlder name: [%s]" % (name,))
+            raise ValueError("syntax error in forlder name" % (name,))
 
     @staticmethod
     def exists(db, fqname):
