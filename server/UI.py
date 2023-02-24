@@ -5,7 +5,7 @@ from datetime import datetime
 
 class UConDBUIHandler(WPHandler):
 
-    @sanitize("safe")
+    @sanitize()
     def index(self, req, relpath, namespace="", **args):
         # show list of folders
         namespace = namespace or self.App.DefaultNamespace or "public"
@@ -27,7 +27,7 @@ class UConDBUIHandler(WPHandler):
             next_url = url_head + "&page=%d" % (page + 1,)
         return page, prev_url, next_url
         
-    @sanitize("safe")
+    @sanitize()
     def folder(self, req, relpath, begins_with=None, folder=None, page=None, **args):
         db = self.App.db()
         folder = db.getFolder(folder)
@@ -48,7 +48,7 @@ class UConDBUIHandler(WPHandler):
             prev_page_url = prev_page_url, next_page_url = next_page_url,
             objects = objects, begins_with=begins_with or "")
 
-    @sanitize("safe")
+    @sanitize()
     def object(self, request, relpath, folder=None, name=None, page=None,
                     key=None, tv=None, tr=None, tag=None, **args):
         db = self.App.db()
@@ -104,7 +104,7 @@ class UConDBUIHandler(WPHandler):
     HEAD = 32*1024
     TAIL = 1024
 
-    @sanitize("safe")
+    @sanitize()
     def version(self, request, relpath, folder=None, vid=None, **args):
         db = self.App.db()
         folder = db.getFolder(folder)
