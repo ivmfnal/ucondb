@@ -7,5 +7,5 @@ UConDB Client Documentation
 
    client_installation
    cli
-   webapi
+   api
 
